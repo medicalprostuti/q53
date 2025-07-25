@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "ইলেকট্রন নিম্ন কক্ষপথ থেকে উচ্চ কক্ষপথে প্রবেশ করলে কি ঘটে?",
+          options: {
+            A: "শক্তির বিচ্ছুরণ",
+            B: "শক্তির আদান-প্রদান হয় না",
+            C: "শক্তির শোষণ",
+            D: "শক্তির বিকিরণ",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোরের পরমাণু মডেল অনুসারে, পরমাণুর ইলেকট্রন যখন নিম্ন শক্তিস্তর (Ground State) থেকে উচ্চ শক্তিস্তরে (Excited State) গমন করে, তখন তাকে শক্তি শোষণ করতে হয়। এই শোষিত শক্তি নির্দিষ্ট পরিমাণের (কোয়ান্টায়িত) হয়ে থাকে, যা ফোটন আকারে শোষিত হয়। ইলেকট্রন তখনই উচ্চ শক্তিস্তরে উঠতে পারে, যখন সে উচ্চ শক্তিস্তর এবং নিম্ন শক্তিস্তরের শক্তির পার্থক্যের সমান পরিমাণ শক্তি শোষণ করে। এই ঘটনাকে পারমাণবিক শোষণ বর্ণালীতে দেখা যায়।</p>",
+        },
+        {
+          id: 2,
+          question:
+            "বোরের স্বীকার্য অনুসারে অনুমোদিত কক্ষপথে ইলেকট্রনের কৌণিক ভরবেগ কত?",
+          options: {
+            A: "L = nh/2π",
+            B: "L = h/2π",
+            C: "L = h/nπ",
+            D: "L = 2h/π",
+          },
+          correct: "A",
+          explanation:
+            "<p>নীলস্ বোর তার পরমাণু মডেলের দ্বিতীয় স্বীকার্যে উল্লেখ করেছেন যে, ইলেকট্রনগুলো শুধুমাত্র নির্দিষ্ট কিছু কক্ষপথে আবর্তন করতে পারে, যেখানে তাদের কৌণিক ভরবেগ (L) প্ল্যাঙ্কের ধ্রুবক (h) এর পূর্ণ গুণিতক হয়। এই স্বীকার্য অনুযায়ী, অনুমোদিত কক্ষপথে ইলেকট্রনের কৌণিক ভরবেগ L = n(h/2π) বা L = nh/2π, যেখানে n হলো প্রধান কোয়ান্টাম সংখ্যা (n = 1, 2, 3, ...)। এটি বোর কোয়ান্টাইজেশন শর্ত নামেও পরিচিত।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "হাইড্রোজেন পরমাণুর বোর কক্ষ পথ গুলিতে ইলেকট্রনের পর্যায়কালের অনুপাত -",
+          options: {
+            A: "1 : 2 : 3",
+            B: "1 : 4 : 9",
+            C: "1 : 8 : 27",
+            D: "কোনোটিই নয়",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোর মডেল অনুসারে, n তম কক্ষপথে ইলেকট্রনের পর্যায়কাল (T) কক্ষপথের প্রধান কোয়ান্টাম সংখ্যা (n) এর ঘনফলের সমানুপাতিক, অর্থাৎ T ∝ n<sup>3</sup>।<br>প্রথম কক্ষপথের জন্য (n=1), T₁ ∝ 1<sup>3</sup> = 1<br>দ্বিতীয় কক্ষপথের জন্য (n=2), T₂ ∝ 2<sup>3</sup> = 8<br>তৃতীয় কক্ষপথের জন্য (n=3), T₃ ∝ 3<sup>3</sup> = 27<br>সুতরাং, হাইড্রোজেন পরমাণুর বোর কক্ষপথগুলিতে ইলেকট্রনের পর্যায়কালের অনুপাত হবে 1 : 8 : 27।</p>",
+        },
+        {
+          id: 4,
+          question: "আলফা কণা বিক্ষেপণ পরীক্ষা কে করেন?",
+          options: {
+            A: "থমসন",
+            B: "বোর",
+            C: "রাদারফোর্ড",
+            D: "কুরী",
+          },
+          correct: "C",
+          explanation:
+            "<p>আর্নেস্ট রাদারফোর্ড ১৯১১ সালে তার বিখ্যাত আলফা কণা বিক্ষেপণ পরীক্ষা পরিচালনা করেন। এই পরীক্ষার মাধ্যমে তিনি পরমাণুর গঠন সম্পর্কে একটি বিপ্লবী ধারণা দেন এবং নিউক্লিয়াসের অস্তিত্ব প্রমাণ করেন। এই পরীক্ষাটি সোনার পাত ব্যবহার করে করা হয়েছিল, যেখানে আলফা কণাগুলিকে সোনার পরমাণুর উপর নিক্ষেপ করা হয় এবং তাদের গতিপথ পর্যবেক্ষণ করা হয়। তার এই পরীক্ষার ফলাফল থমসনের প্লাম পুডিং মডেলকে ভুল প্রমাণ করে এবং পরমাণুর কেন্দ্রস্থলে একটি ক্ষুদ্র, ঘন, ধনাত্মক চার্জযুক্ত নিউক্লিয়াসের ধারণা প্রতিষ্ঠা করে।</p>",
+        },
+        {
+          id: 5,
+          question: "হাইড্রোজেন পরমাণুর ভূমিস্তরের শক্তি কত?",
+          options: {
+            A: "-13.6 eV",
+            B: "-13.6 J",
+            C: "-13.6 N",
+            D: "13.6 J",
+          },
+          correct: "A",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর n তম শক্তিস্তরের শক্তি E<sub>n</sub> = -13.6 / n² eV। ভূমিস্তর হলো সর্বনিম্ন শক্তিস্তর, যেখানে প্রধান কোয়ান্টাম সংখ্যা n = 1।<br>সুতরাং, ভূমিস্তরের শক্তি E₁ = -13.6 / 1² eV = -13.6 eV। ঋণাত্মক চিহ্ন নির্দেশ করে যে ইলেকট্রন নিউক্লিয়াসের সাথে আবদ্ধ এবং এটি মুক্ত হতে এই পরিমাণ শক্তির প্রয়োজন।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "বোরের স্বীকার্য অনুযায়ী ইলেকট্রনের কোয়ান্টায়িত রাশি হলো-",
+          options: {
+            A: "রৈখিক বেগ",
+            B: "কৌণিক বেগ",
+            C: "রৈখিক ভরবেগ",
+            D: "কৌণিক ভরবেগ",
+          },
+          correct: "D",
+          explanation:
+            "<p>নীলস্ বোর তার পরমাণু মডেলের দ্বিতীয় স্বীকার্যে উল্লেখ করেছেন যে, ইলেকট্রনগুলো শুধুমাত্র নির্দিষ্ট কিছু কক্ষপথে আবর্তন করতে পারে, যেখানে তাদের কৌণিক ভরবেগ (L) প্ল্যাঙ্কের ধ্রুবক (h) এর পূর্ণ গুণিতক হয়। অর্থাৎ, L = n(h/2π)। এটি বোরের কোয়ান্টাইজেশন শর্ত নামে পরিচিত এবং এর মাধ্যমে তিনি ইলেকট্রনের কৌণিক ভরবেগকে কোয়ান্টায়িত করেন। এর ফলে, ইলেকট্রন শুধুমাত্র নির্দিষ্ট শক্তিস্তরেই থাকতে পারে এবং সেখান থেকে শক্তি বিকিরণ বা শোষণ করে।</p>",
+        },
+        {
+          id: 7,
+          question: "ইলেকট্রন কক্ষপথে আবর্তনকালে শক্তির-",
+          options: {
+            A: "শোষণ ঘটে",
+            B: "বিকিরণ ঘটে",
+            C: "কোনোটিই ঘটে না",
+            D: "উভয়ই ঘটে",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোরের পরমাণু মডেলের প্রথম স্বীকার্য অনুসারে, ইলেকট্রনগুলো নির্দিষ্ট অনুমোদিত বা স্থায়ী কক্ষপথে আবর্তনকালে কোনো শক্তি শোষণ বা বিকিরণ করে না। ইলেকট্রন যতক্ষণ এই স্থায়ী কক্ষপথগুলোতে থাকে, ততক্ষণ পরমাণুর শক্তি সুস্থিত থাকে। শক্তি শোষণ বা বিকিরণ তখনই ঘটে যখন ইলেকট্রন একটি শক্তিস্তর থেকে অন্য শক্তিস্তরে লাফিয়ে যায়। যদি ইলেকট্রন শক্তিস্তরে থাকে, তাহলে শক্তির কোনো আদান-প্রদান ঘটে না।</p>",
+        },
+        {
+          id: 8,
+          question: "পরমাণুর মোট শক্তি সর্বদাই -",
+          options: {
+            A: "ধনাত্মক",
+            B: "ঋণাত্মক",
+            C: "শূন্য",
+            D: "কোনোটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>পরমাণুর ইলেকট্রনের মোট শক্তি সর্বদাই ঋণাত্মক। এর কারণ হলো, ইলেকট্রন নিউক্লিয়াসের ধনাত্মক চার্জ দ্বারা আকৃষ্ট হয়ে একটি আবদ্ধ অবস্থায় থাকে। এই ঋণাত্মক শক্তি বোঝায় যে ইলেকট্রনটিকে নিউক্লিয়াসের আকর্ষণ থেকে মুক্ত করতে কিছু পরিমাণ শক্তি সরবরাহ করতে হবে। পরমাণুর ভূমিস্তরে শক্তি সবচেয়ে বেশি ঋণাত্মক, যা সবচেয়ে স্থিতিশীল অবস্থা নির্দেশ করে। ইলেকট্রন যখন অসীমে থাকে (পরমাণু থেকে মুক্ত হয়), তখন তার শক্তি শূন্য ধরা হয়।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "হাইড্রোজেন পরমাণু থেকে ইলেকট্রন মুক্ত করতে শক্তি প্রয়োজন-",
+          options: {
+            A: "13.6 MeV",
+            B: "13.6 eV",
+            C: "136 MeV",
+            D: "কোনোটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>হাইড্রোজেন পরমাণুর ভূমিস্তরের শক্তি হলো -13.6 eV। ইলেকট্রনকে এই ভূমিস্তর থেকে মুক্ত করতে হলে তাকে নিউক্লিয়াসের আকর্ষণ থেকে সম্পূর্ণ আলাদা করতে হবে, অর্থাৎ অসীম দূরত্বে নিয়ে যেতে হবে যেখানে তার শক্তি শূন্য ধরা হয়। সুতরাং, -13.6 eV শক্তি থেকে শূন্য শক্তিতে নিয়ে যেতে 13.6 eV পরিমাণ শক্তির প্রয়োজন হয়। এই পরিমাণ শক্তিকে হাইড্রোজেন পরমাণুর আয়নিকরণ শক্তি বলা হয়।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "একটি ইলেকট্রন যদি E₂ হতে E₁ শক্তিস্তরে গমন করে তাহলে বিকীর্ণ শক্তির তরঙ্গদৈর্ঘ্য জানা যাবে নিচের কোন সমীকরণের সাহায্যে-",
+          options: {
+            A: "1/λ = (E₂ - E₁) / hc",
+            B: "λ = hc / E₂",
+            C: "λ = h / (E₂ - E₁)",
+            D: "λ = hc / (E₂ - E₁)",
+          },
+          correct: "D",
+          explanation:
+            "<p>বোরের তৃতীয় স্বীকার্য অনুযায়ী, ইলেকট্রন যখন উচ্চ শক্তিস্তর (E₂) থেকে নিম্ন শক্তিস্তর (E₁) এ স্থানান্তরিত হয়, তখন সে শক্তি বিকিরণ করে। বিকিরিত ফোটনের শক্তি (ΔE) এই দুটি শক্তিস্তরের পার্থক্যের সমান, অর্থাৎ ΔE = E₂ - E₁।<br>আমরা জানি, ফোটনের শক্তি E = hc/λ, যেখানে h প্ল্যাঙ্কের ধ্রুবক, c আলোর বেগ এবং λ হলো বিকিরিত ফোটনের তরঙ্গদৈর্ঘ্য।<br>সুতরাং, E₂ - E₁ = hc/λ<br>এই সমীকরণ থেকে তরঙ্গদৈর্ঘ্য λ নির্ণয় করা যায়:<br>λ = hc / (E₂ - E₁)<br>এই সমীকরণটি বিকিরিত শক্তির তরঙ্গদৈর্ঘ্য নির্ণয়ের জন্য ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "রাদারফোর্ডের আলফা কণা পরীক্ষা থেকে কোনটির অস্তিত্ব পাওয়া যায়?",
+          options: {
+            A: "ইলেকট্রন",
+            B: "নিউক্লিয়াস",
+            C: "নিউট্রিনো",
+            D: "নিউট্রন",
+          },
+          correct: "B",
+          explanation:
+            "<p>আর্নেস্ট রাদারফোর্ডের আলফা কণা বিক্ষেপণ পরীক্ষার (১৯১১ সাল) প্রধান ফলাফল ছিল পরমাণুর কেন্দ্রস্থলে একটি ক্ষুদ্র, ঘন, ধনাত্মক চার্জযুক্ত নিউক্লিয়াসের অস্তিত্ব প্রমাণ। এই পরীক্ষায়, বেশিরভাগ আলফা কণা সোনার পাত ভেদ করে চলে গিয়েছিল, যা প্রমাণ করে যে পরমাণুর বেশিরভাগ অংশ ফাঁকা। কিন্তু কিছু কণা খুব সামান্য কোণে বিচ্যুত হয়েছিল এবং খুব অল্প সংখ্যক কণা (প্রায় ২০,০০০ এর মধ্যে ১টি) ১৮০ ডিগ্রি কোণে ফিরে এসেছিল। এই বিচ্যুতি এবং ফিরে আসার ঘটনা নিউক্লিয়াসের অস্তিত্বের দৃঢ় প্রমাণ দেয়।</p>",
+        },
+        {
+          id: 12,
+          question: "রাদারফোর্ডের পরীক্ষায় ব্যবহৃত স্বর্ণপাতের পুরুত্ব কত?",
+          options: {
+            A: "6 x 10⁻⁷ m",
+            B: "5 x 10⁻⁷ m",
+            C: "5 x 10⁻⁶ m",
+            D: "6 x 10⁻⁶ m",
+          },
+          correct: "A",
+          explanation:
+            "<p>রাদারফোর্ডের আলফা কণা বিক্ষেপণ পরীক্ষায় তিনি অত্যন্ত পাতলা স্বর্ণপাত ব্যবহার করেছিলেন, যাতে আলফা কণাগুলো শুধুমাত্র একটি বা দুটি পরমাণুর সাথে সংঘর্ষে লিপ্ত হয়। এই স্বর্ণপাতের পুরুত্ব প্রায় 6 x 10<sup>-7</sup> মিটার (বা 600 ন্যানোমিটার) ছিল। এই পাতলা আবরণই নিশ্চিত করেছিল যে, অধিকাংশ আলফা কণা কোনো বাধা ছাড়াই অতিক্রম করতে পারে এবং খুব অল্প সংখ্যক কণা নিউক্লিয়াসের সাথে সরাসরি সংঘর্ষের কারণে বিচ্যুত হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "রাদারফোর্ডের মডেল অনুসারে নিচের কোন বক্তব্যটি সঠিক নয়?",
+          options: {
+            A: "পরমাণুর সমুদয় ভর এর কেন্দ্রে পুঞ্জিভূত",
+            B: "সমুদয় ধনাত্মক চার্জ এর কেন্দ্রে পুঞ্জিভূত",
+            C: "নিউক্লিয়াসের ব্যাসার্ধ 10⁻¹⁵ m এর পর্যায়ভুক্ত",
+            D: "পরমাণুর অস্তিত্ব বাধাগ্রস্থ হবে না",
+          },
+          correct: "D",
+          explanation:
+            "<p>রাদারফোর্ডের পরমাণু মডেল অনুসারে, পরমাণুর সমগ্র ধনাত্মক চার্জ এবং প্রায় সমস্ত ভর তার কেন্দ্রে অবস্থিত ক্ষুদ্র নিউক্লিয়াসে পুঞ্জীভূত থাকে। নিউক্লিয়াসের ব্যাসার্ধ প্রায় 10<sup>-15</sup> m এর পর্যায়ভুক্ত। তবে, রাদারফোর্ডের মডেলের একটি প্রধান ত্রুটি ছিল এটি পরমাণুর স্থায়িত্ব ব্যাখ্যা করতে পারেনি। ক্লাসিক্যাল তড়িচ্চুম্বকীয় তত্ত্ব অনুসারে, নিউক্লিয়াসের চারপাশে ঘূর্ণায়মান ইলেকট্রন অবিরাম শক্তি বিকিরণ করতে থাকবে এবং শক্তি হারিয়ে সর্পিল পথে নিউক্লিয়াসে পতিত হবে, যার ফলে পরমাণুর অস্তিত্ব বাধাগ্রস্ত হবে। বোরের পরমাণু মডেল এই সমস্যার সমাধান করে।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "ইলেকট্রন যখন উচ্চ শক্তি স্তর থেকে নিম্ন শক্তি স্তরে যায় তখন ইলেকট্রন কর্তৃক বিকিরিত শক্তি কী হবে?",
+          options: {
+            A: "hf = E₂ - E₁",
+            B: "hf = E₁ + E₂",
+            C: "hf = E₁",
+            D: "hf = E₂ / E₁",
+          },
+          correct: "A",
+          explanation:
+            "<p>বোরের পরমাণু মডেলের তৃতীয় স্বীকার্য অনুসারে, ইলেকট্রন যখন একটি উচ্চ শক্তিস্তর (E₂) থেকে একটি নিম্ন শক্তিস্তর (E₁) এ স্থানান্তরিত হয়, তখন সে শক্তি বিকিরণ করে। এই বিকিরিত শক্তি ফোটন আকারে নির্গত হয় এবং ফোটনের শক্তি (hf) দুটি শক্তিস্তরের পার্থক্যের সমান হয়।<br>অর্থাৎ, hf = E₂ - E₁, যেখানে h হলো প্ল্যাঙ্কের ধ্রুবক এবং f হলো বিকিরিত ফোটনের কম্পাঙ্ক। এই সম্পর্কটি পরমাণুর রেখা বর্ণালীর উৎপত্তির ব্যাখ্যা প্রদান করে।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "5000 Å তরঙ্গদৈর্ঘ্য বিশিষ্ট আলোক রশ্মি কোন ধরনের প্রক্রিয়ায় উৎপন্ন হতে পারে?",
+          options: {
+            A: "স্পন্দিত তড়িৎ প্রবাহ থেকে",
+            B: "পরমাণুস্থ ইলেকট্রন স্থানান্তরের ফলে",
+            C: "হাইড্রোজেন পরমাণু ফিউশন থেকে",
+            D: "নিউক্লিয়াসের অভ্যন্তরীণ স্থানান্তর থেকে",
+          },
+          correct: "B",
+          explanation:
+            "<p>5000 Å (অ্যাংস্ট্রম) তরঙ্গদৈর্ঘ্য দৃশ্যমান আলোর পরিসীমার মধ্যে পড়ে (সবুজ-নীল আলো)। এই ধরনের আলোক রশ্মি সাধারণত পরমাণুর ইলেকট্রনের শক্তিস্তর স্থানান্তরের ফলে উৎপন্ন হয়। যখন একটি পরমাণুর ইলেকট্রন উচ্চ শক্তিস্তর থেকে নিম্ন শক্তিস্তরে পতিত হয়, তখন এটি শক্তি (ফোটন) বিকিরণ করে। এই বিকিরিত ফোটনের শক্তি শক্তিস্তর দুটির পার্থক্যের সমান হয় এবং এর তরঙ্গদৈর্ঘ্য দৃশ্যমান আলো পরিসরে পড়লে আমরা তা দেখতে পাই। পারমাণবিক বর্ণালী, যেমন হাইড্রোজেন বা পারদ বাতির আলো, এই প্রক্রিয়ার মাধ্যমেই উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "রিডবার্গ ধ্রুবকের মান কত?",
+          options: {
+            A: "1.097 x 10⁷ m⁻¹",
+            B: "1.097 m⁻¹",
+            C: "0.097 m⁻¹",
+            D: "1.097 x 10⁻⁷ m⁻¹",
+          },
+          correct: "A",
+          explanation:
+            "<p>রিডবার্গ ধ্রুবক (R<sub>H</sub>) হলো একটি ভৌত ধ্রুবক যা পারমাণবিক বর্ণালী রেখার তরঙ্গদৈর্ঘ্য গণনা করতে ব্যবহৃত হয়, বিশেষ করে হাইড্রোজেন পরমাণুর জন্য। এর মান প্রায় 1.097 x 10<sup>7</sup> m<sup>-1</sup> (প্রতি মিটার)। এই ধ্রুবকটি সুইডিশ পদার্থবিজ্ঞানী জোহানেস রিডবার্গের নামানুসারে নামকরণ করা হয়েছে এবং বোর মডেলের মাধ্যমে এর তাত্ত্বিক ব্যাখ্যা প্রদান করা সম্ভব হয়েছিল। এই ধ্রুবকের সাহায্যে বিভিন্ন পারমাণবিক বর্ণালী সিরিজের (যেমন লাইম্যান, বালমার, পাশেন) তরঙ্গদৈর্ঘ্য নির্ভুলভাবে গণনা করা যায়।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "স্থায়ী কক্ষপথে আবর্তনশীল ইলেকট্রনের মোট শক্তির পরিমাণ প্রধান কোয়ান্টাম সংখ্যার সাথে কিভাবে সম্পর্কিত?",
+          options: {
+            A: "সমানুপাতিক",
+            B: "ব্যস্তানুপাতিক",
+            C: "বর্গের ব্যস্তানুপাতিক",
+            D: "বর্গের সমানুপাতিক",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর n তম স্থায়ী কক্ষপথে ইলেকট্রনের মোট শক্তি (E<sub>n</sub>) প্রধান কোয়ান্টাম সংখ্যা (n) এর বর্গের ব্যস্তানুপাতিক। এর সূত্র হলো E<sub>n</sub> = -13.6 / n² eV।<br>অর্থাৎ, E<sub>n</sub> ∝ 1/n²।<br>এই সম্পর্কটি বোঝায় যে, n এর মান যত বৃদ্ধি পায় (অর্থাৎ, ইলেকট্রন নিউক্লিয়াস থেকে যত দূরে যায়), ইলেকট্রনের শক্তি তত কম ঋণাত্মক হয় বা এর মান শূন্যের কাছাকাছি আসে। এর অর্থ হলো, উচ্চ শক্তিস্তরগুলো কম স্থিতিশীল এবং ইলেকট্রনকে মুক্ত করার জন্য কম শক্তির প্রয়োজন হয়।</p>",
+        },
+        {
+          id: 18,
+          question: "হাইড্রোজেন পরমাণুতে ইলেকট্রনের সর্বনিম্ন কৌণিক ভরবেগ-",
+          options: {
+            A: "h",
+            B: "h/π",
+            C: "h/2π",
+            D: "h/4π",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোরের স্বীকার্য অনুযায়ী, অনুমোদিত কক্ষপথে ইলেকট্রনের কৌণিক ভরবেগ L = nh/2π, যেখানে n হলো প্রধান কোয়ান্টাম সংখ্যা (n = 1, 2, 3, ...)।<br>সর্বনিম্ন কৌণিক ভরবেগ ঘটে যখন n এর মান সর্বনিম্ন হয়, অর্থাৎ n = 1 (ভূমিস্তর)।<br>সুতরাং, সর্বনিম্ন কৌণিক ভরবেগ = 1 * h/2π = h/2π।<br>এটি হাইড্রোজেন পরমাণুর ইলেকট্রনের জন্য সম্ভাব্য সর্বনিম্ন কৌণিক ভরবেগ।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "প্রথম বোর কক্ষপথের ব্যাসার্ধ r₁ হলে n তম কক্ষপথের ব্যাসার্ধ-",
+          options: {
+            A: "nr₁",
+            B: "r₁/n",
+            C: "n²r₁",
+            D: "r₁/n²",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর n তম কক্ষপথের ব্যাসার্ধ (r<sub>n</sub>) প্রধান কোয়ান্টাম সংখ্যা (n) এর বর্গের সমানুপাতিক। এর সূত্র হলো r<sub>n</sub> = n²r₁, যেখানে r₁ হলো প্রথম বোর কক্ষপথের ব্যাসার্ধ (বোর ব্যাসার্ধ)।<br>অর্থাৎ, r<sub>n</sub> ∝ n²।<br>এই সম্পর্কটি বোঝায় যে, ইলেকট্রন নিউক্লিয়াস থেকে যত দূরে যায়, কক্ষপথের ব্যাসার্ধ তত দ্রুত বৃদ্ধি পায়। উদাহরণস্বরূপ, দ্বিতীয় কক্ষপথের ব্যাসার্ধ প্রথম কক্ষপথের ব্যাসার্ধের 2² = 4 গুণ হবে, এবং তৃতীয় কক্ষপথের ব্যাসার্ধ 3² = 9 গুণ হবে।</p>",
+        },
+        {
+          id: 20,
+          question: "প্রথম বোর কক্ষপথের ব্যাসার্ধ-",
+          options: {
+            A: "1.53 Å",
+            B: "0.53 Å",
+            C: "0.053 Å",
+            D: "53 Å",
+          },
+          correct: "B",
+          explanation:
+            "<p>প্রথম বোর কক্ষপথের ব্যাসার্ধকে বোর ব্যাসার্ধ (a₀) বলা হয়। এটি হাইড্রোজেন পরমাণুর ভূমিস্তরে ইলেকট্রনের গড় দূরত্ব নির্দেশ করে। এর মান প্রায় 0.529 Å বা প্রায় 0.53 Å (অ্যাংস্ট্রম), যা 0.53 x 10<sup>-10</sup> মিটার এর সমান। এটি পারমাণবিক পদার্থবিজ্ঞানের একটি মৌলিক ধ্রুবক এবং এটি বোর মডেলের একটি গুরুত্বপূর্ণ সাফল্য ছিল, কারণ এটি পরমাণুর আকারের একটি বাস্তবসম্মত অনুমান প্রদান করে।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "বোর মডেল অনুসারে হাইড্রোজেন পরমাণুর ২য় কক্ষপথের ব্যাসার্ধ ১ম কক্ষপথের ব্যাসার্ধের-",
+          options: {
+            A: "দুই গুণ",
+            B: "তিন গুণ",
+            C: "চার গুণ",
+            D: "পাঁচ গুণ",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর n তম কক্ষপথের ব্যাসার্ধ (r<sub>n</sub>) প্রধান কোয়ান্টাম সংখ্যা (n) এর বর্গের সমানুপাতিক, অর্থাৎ r<sub>n</sub> = n²r₁, যেখানে r₁ হলো প্রথম কক্ষপথের ব্যাসার্ধ।<br>২য় কক্ষপথের জন্য (n=2):<br>r₂ = 2²r₁ = 4r₁<br>সুতরাং, ২য় কক্ষপথের ব্যাসার্ধ ১ম কক্ষপথের ব্যাসার্ধের চার গুণ হবে।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "বোর মডেল অনুসারে হাইড্রোজেনের কক্ষপথের ব্যাসার্ধের ক্ষেত্রে নিচের কোন সম্পর্ক সঠিক?",
+          options: {
+            A: "r₂ = 2r₁",
+            B: "r₄ = 3r₁",
+            C: "r₄ = 16r₁",
+            D: "r₄ = 16r₁",
+          },
+          correct: "C",
+          explanation: `-`,
+        },
+        {
+          id: 23,
+          question: "৩য় কক্ষপথে ইলেকট্রনের শক্তি—",
+          options: {
+            A: "E₃ = E₁",
+            B: "E₃ = 3E₁",
+            C: "E₃ = E₁/9",
+            D: "E₃ = 9E₁",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর n তম শক্তিস্তরের শক্তি E<sub>n</sub> = E₁ / n², যেখানে E₁ হলো ভূমিস্তরের শক্তি (-13.6 eV)।<br>৩য় কক্ষপথের জন্য (n=3):<br>E₃ = E₁ / 3²<br>E₃ = E₁ / 9<br>সুতরাং, ৩য় কক্ষপথে ইলেকট্রনের শক্তি ভূমিস্তরের শক্তির ৯ ভাগের ১ ভাগ হবে।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "একটি হাইড্রোজেন পরমাণুর ইলেকট্রনের চতুর্থ কক্ষপথের ব্যাসার্ধ দ্বিতীয় কক্ষপথের ব্যাসার্ধ অপেক্ষা কতগুণ বেশি?",
+          options: {
+            A: "দ্বিগুণ",
+            B: "তিন গুণ",
+            C: "চার গুণ",
+            D: "পাঁচ গুণ",
+          },
+          correct: "C",
+          explanation:
+            "<p>বোর মডেল অনুসারে, n তম কক্ষপথের ব্যাসার্ধ (r<sub>n</sub>) প্রধান কোয়ান্টাম সংখ্যা (n) এর বর্গের সমানুপাতিক। অর্থাৎ, r<sub>n</sub> ∝ n²।<br>চতুর্থ কক্ষপথের ব্যাসার্ধ r₄ ∝ 4² = 16।<br>দ্বিতীয় কক্ষপথের ব্যাসার্ধ r₂ ∝ 2² = 4।<br>এখন r₄ এবং r₂ এর অনুপাত বের করি:<br>r₄ / r₂ = (16 * r₁) / (4 * r₁) = 16/4 = 4<br>সুতরাং, চতুর্থ কক্ষপথের ব্যাসার্ধ দ্বিতীয় কক্ষপথের ব্যাসার্ধ অপেক্ষা চার গুণ বেশি হবে।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "হাইড্রোজেন পরমাণুর ইলেকট্রনের সর্বনিম্ন কক্ষীয় কৌণিক ভরবেগ কোনটি?",
+          options: {
+            A: "h",
+            B: "h/π",
+            C: "h/4π",
+            D: "h/2π",
+          },
+          correct: "D",
+          explanation:
+            "<p>বোরের পরমাণু মডেলের দ্বিতীয় স্বীকার্য অনুযায়ী, একটি ইলেকট্রন শুধুমাত্র সেই কক্ষপথগুলিতে আবর্তন করতে পারে যেখানে তার কৌণিক ভরবেগ (L) প্ল্যাঙ্কের ধ্রুবক (h) এর একটি পূর্ণ গুণিতক হয়। এই সম্পর্কটি হলো L = n(h/2π), যেখানে n হলো প্রধান কোয়ান্টাম সংখ্যা এবং এর মান 1, 2, 3...।<br>সর্বনিম্ন কক্ষীয় কৌণিক ভরবেগ ঘটে যখন n এর মান সর্বনিম্ন হয়, অর্থাৎ n = 1।<br>এই ক্ষেত্রে, L = 1 * h/2π = h/2π।<br>সুতরাং, হাইড্রোজেন পরমাণুর ইলেকট্রনের সর্বনিম্ন কক্ষীয় কৌণিক ভরবেগ h/2π।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "ইলেকট্রন যখন শক্তি বিকিরণ করে, তখন এর শক্তি শূন্য হয় না। কারণ-",
+          options: {
+            A: "বিকিরিত শক্তি কোয়ান্টায়িত",
+            B: "তড়িতচৌম্বক তরঙ্গ বিকিরণ করে",
+            C: "বিকিরণের পর ইলেকট্রন নিম্ন শক্তিস্তরে অবস্থান করে",
+            D: "বিভব শক্তি কখনোই শূন্য হয় না",
+          },
+          correct: "C",
+          explanation:
+            "<p>যখন একটি ইলেকট্রন শক্তি বিকিরণ করে, তখন এটি একটি উচ্চ শক্তিস্তর (উত্তেজিত অবস্থা) থেকে একটি নিম্ন শক্তিস্তরে স্থানান্তরিত হয়। বোরের মডেল অনুসারে, ইলেকট্রন নির্দিষ্ট শক্তিস্তরে থাকে এবং শক্তি বিকিরণ করে শুধুমাত্র দুটি শক্তিস্তরের পার্থক্যের সমান ফোটন নির্গত করে। ইলেকট্রন তখন নতুন, নিম্ন শক্তিস্তরে স্থিতিশীলভাবে আবর্তন করে। এর শক্তি শূন্য হয় না কারণ এটি তখনও নিউক্লিয়াসের আকর্ষণে আবদ্ধ থাকে এবং তার একটি নির্দিষ্ট ঋণাত্মক শক্তি মান থাকে। শূন্য শক্তি মানে ইলেকট্রন পরমাণু থেকে সম্পূর্ণ মুক্ত।</p>",
+        },
+        {
+          id: 27,
+          question: "পরমাণুর সম্পূর্ণ আয়নিত অবস্থাকে বলে -",
+          options: {
+            A: "কঠিন অবস্থা",
+            B: "তরল অবস্থা",
+            C: "গ্যাসীয় অবস্থা",
+            D: "প্লাজমা অবস্থা",
+          },
+          correct: "D",
+          explanation:
+            "<p>প্লাজমা পদার্থের চতুর্থ অবস্থা হিসেবে পরিচিত। এটি এমন একটি অবস্থা যেখানে পরমাণু থেকে ইলেকট্রনগুলো সম্পূর্ণরূপে বিচ্ছিন্ন হয়ে যায়, যার ফলে ইলেকট্রন এবং আয়নিত নিউক্লিয়াসের একটি মিশ্রণ তৈরি হয়। এই অবস্থায় পদার্থের কণাগুলো তীব্রভাবে গতিশীল থাকে এবং তড়িৎচৌম্বকীয়ভাবে প্রভাবিত হয়। সূর্য, তারা, এবং বজ্রপাতের সময় প্লাজমা অবস্থা দেখা যায়। এটি পদার্থের একটি উচ্চ শক্তির অবস্থা।</p>",
+        },
+        {
+          id: 28,
+          question: "হাইড্রোজেন পরমাণুর n তম কক্ষপথে ইলেকট্রনের বেগ হলো-",
+          options: {
+            A: "e² / (2ε₀nh)",
+            B: "n²h² / (4π²me)",
+            C: "e / √(4πε₀mr)",
+            D: "2πε₀nh / e²",
+          },
+          correct: "A",
+          explanation:
+            "হাইড্রোজেন পরমাণুর n তম কক্ষপথে ইলেকট্রনের বেগের জন্য বোর মডেল অনুযায়ী সূত্রটি হলো v<sub>n</sub> = (e²) / (2ε₀nh)।<br><br>চলো দেখি কিভাবে এটি আসে:<br>বোর মডেল অনুযায়ী, একটি ইলেকট্রন নিউক্লিয়াসের চারপাশে নির্দিষ্ট কক্ষপথে ঘোরে। এই কক্ষপথগুলোর জন্য দুটি প্রধান স্বীকার্য আছে:<br>১. ইলেকট্রনের কক্ষপথে ঘোরার জন্য প্রয়োজনীয় কেন্দ্রমুখী বল (F<sub>c</sub>) নিউক্লিয়াস ও ইলেকট্রনের মধ্যেকার কুলম্ব আকর্ষণ বল (F<sub>e</sub>) দ্বারা সরবরাহ করা হয়।<br>অর্থাৎ, F<sub>c</sub> = F<sub>e</sub><br>mv<sub>n</sub>²/r<sub>n</sub> = (1 / (4πε₀)) * (e² / r<sub>n</sub>²)<br>এখান থেকে, mv<sub>n</sub>² = e² / (4πε₀r<sub>n</sub>) (এটি সমীকরণ ১)<br><br>২. ইলেকট্রনের কৌণিক ভরবেগ (L) পরিমাপিত। অর্থাৎ, L = mv<sub>n</sub>r<sub>n</sub> = nh / (2π), যেখানে n হলো প্রধান কোয়ান্টাম সংখ্যা (1, 2, 3, ...), h হলো প্ল্যাঙ্কের ধ্রুবক।<br>এখান থেকে আমরা r<sub>n</sub> এর মান বের করতে পারি: r<sub>n</sub> = nh / (2πmv<sub>n</sub>) (এটি সমীকরণ ২)<br><br>এখন সমীকরণ ২ থেকে r<sub>n</sub> এর মান সমীকরণ ১ এ বসাই:<br>mv<sub>n</sub>² = e² / (4πε₀ * (nh / (2πmv<sub>n</sub>)))<br>mv<sub>n</sub>² = e² * (2πmv<sub>n</sub>) / (4πε₀nh)<br><br>এখন v<sub>n</sub> দ্বারা উভয় পক্ষকে ভাগ করি (ধরে নিচ্ছি v<sub>n</sub> ≠ 0):<br>mv<sub>n</sub> = e² * (2πm) / (4πε₀nh)<br>mv<sub>n</sub> = e²m / (2ε₀nh)<br><br>এবার উভয় পক্ষকে m দ্বারা ভাগ করলে আমরা v<sub>n</sub> এর জন্য সূত্রটি পাই:<br>v<sub>n</sub> = e² / (2ε₀nh)<br><br>এখানে, e হলো ইলেকট্রনের চার্জ, ε₀ হলো শূন্যস্থানের প্রবেশ্যতা, n হলো প্রধান কোয়ান্টাম সংখ্যা এবং h হলো প্ল্যাঙ্কের ধ্রুবক। তাই অপশন A সঠিক।",
+        },
+        {
+          id: 29,
+          question:
+            "হাইড্রোজেন পরমাণুর চতুর্থ বোর কক্ষে ইলেকট্রনের কৌণিক ভরবেগ হলো-",
+          options: {
+            A: "h/π",
+            B: "h/2π",
+            C: "h",
+            D: "2h/π",
+          },
+          correct: "D",
+          explanation:
+            "<p>বোরের স্বীকার্য অনুযায়ী, অনুমোদিত কক্ষপথে ইলেকট্রনের কৌণিক ভরবেগ L = nh/2π, যেখানে n হলো প্রধান কোয়ান্টাম সংখ্যা (n = 1, 2, 3, ...)।<br>চতুর্থ কক্ষপথের জন্য (n=4):<br>L = 4 * h/2π<br>L = 2h/π<br>সুতরাং, হাইড্রোজেন পরমাণুর চতুর্থ বোর কক্ষে ইলেকট্রনের কৌণিক ভরবেগ 2h/π হবে।</p>",
+        },
+        {
+          id: 30,
+          question: "কৌণিক ভরবেগ সমীকরণ mvr = nh/2π অনুযায়ী নিচের কোনটি ভুল?",
+          options: {
+            A: "m = ইলেকট্রনের ভর",
+            B: "v = প্রোটনের গতিবেগ",
+            C: "r = অরবিটের ব্যাসার্ধ",
+            D: "h = প্ল্যাঙ্কের ধ্রুবক",
+          },
+          correct: "B",
+          explanation:
+            "<p>কৌণিক ভরবেগ সমীকরণ mvr = nh/2π বোর মডেলের একটি মৌলিক স্বীকার্য। এখানে প্রতিটি প্রতীকের নির্দিষ্ট অর্থ রয়েছে:<br>- m = ইলেকট্রনের ভর: এটি সঠিক, কারণ ইলেকট্রন কক্ষপথে আবর্তন করে।<br>- v = ইলেকট্রনের গতিবেগ: এটি ইলেকট্রনের রৈখিক গতি নির্দেশ করে, প্রোটনের নয়। প্রোটন নিউক্লিয়াসের অংশ এবং সাধারণত গতিশীল থাকে না (পরমাণুর কেন্দ্রে)। সুতরাং, অপশন (B) ভুল।<br>- r = অরবিটের ব্যাসার্ধ: এটি ইলেকট্রনের আবর্তন পথের ব্যাসার্ধ। এটি সঠিক।<br>- h = প্ল্যাঙ্কের ধ্রুবক: এটি একটি মৌলিক ভৌত ধ্রুবক যা কোয়ান্টাম বলবিজ্ঞানে ব্যবহৃত হয়। এটি সঠিক।<br>সুতরাং, 'v = প্রোটনের গতিবেগ' বক্তব্যটি ভুল।</p>",
+        },
+        {
+          id: 31,
+          question: "হাইড্রোজেনের n তম কক্ষপথের ব্যাসার্ধের সমীকরণ-",
+          options: {
+            A: "rₙ = n x 0.53 Å",
+            B: "rₙ = n² x 0.53 Å",
+            C: "rₙ = 0.53/n² Å",
+            D: "rₙ = 0.53/n Å",
+          },
+          correct: "B",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর n তম কক্ষপথের ব্যাসার্ধ (r<sub>n</sub>) প্রধান কোয়ান্টাম সংখ্যা (n) এর বর্গের সমানুপাতিক। এর সূত্র হলো r<sub>n</sub> = n²r₁, যেখানে r₁ হলো প্রথম বোর কক্ষপথের ব্যাসার্ধ।<br>প্রথম বোর কক্ষপথের ব্যাসার্ধ (বোর ব্যাসার্ধ) প্রায় 0.53 Å।<br>সুতরাং, n তম কক্ষপথের ব্যাসার্ধের সমীকরণ r<sub>n</sub> = n² x 0.53 Å। এই সূত্র ব্যবহার করে হাইড্রোজেন পরমাণুর যেকোনো শক্তিস্তরের ব্যাসার্ধ নির্ণয় করা যায়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
